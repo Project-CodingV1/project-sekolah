@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSuperAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    function isSchoolAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'school_admin';
+    }
+    
+    function isTeacher() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    
+    function isStudent() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    
+    function isParent() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'parent';
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isOwnSchool(schoolId) {
+      return getUserData().school_id == schoolId;
+    }
+    
+    function isOwnData(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isTeacherOfClass(classId) {
+      return isTeacher() && 
+             get(/databases/$(database)/documents/classes/$(classId)).data.teacher_id == request.auth.uid;
+    }
+    
+    function isStudentInClass(classId) {
+      return isStudent() && 
+             getUserData().class_id == classId;
+    }
+    
+    function isParentOfStudent(studentId) {
+      return isParent() && 
+             get(/databases/$(database)/documents/users/$(studentId)).data.parent_id == request.auth.uid;
+    }
+    
+    // Schools collection
+    match /schools/{schoolId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || isSchoolAdmin() && isOwnSchool(schoolId));
+      allow write: if isSuperAdmin();
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    isOwnData(userId) ||
+                    isParent() && resource.data.parent_id == request.auth.uid);
+      
+      allow create: if isSuperAdmin() || 
+                     (isSchoolAdmin() && request.resource.data.school_id == getUserData().school_id);
+      
+      allow update: if isSuperAdmin() || 
+                     (isSchoolAdmin() && isOwnSchool(resource.data.school_id)) ||
+                     isOwnData(userId);
+      
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Classes collection
+    match /classes/{classId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    isStudent() && isOwnSchool(resource.data.school_id) ||
+                    isParent() && isOwnSchool(resource.data.school_id));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id));
+    }
+    
+    // Subjects collection
+    match /subjects/{subjectId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    isStudent() && isOwnSchool(resource.data.school_id));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id));
+    }
+    
+    // Schedules collection
+    match /schedules/{scheduleId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    isStudent() && isOwnSchool(resource.data.school_id) ||
+                    isParent() && isOwnSchool(resource.data.school_id));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id));
+    }
+    
+    // Attendance collection
+    match /attendance/{attendanceId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    (isStudent() && resource.data.student_id == request.auth.uid) ||
+                    (isParent() && isParentOfStudent(resource.data.student_id)));
+      
+      allow create, update: if isSuperAdmin() || 
+                             (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id)) ||
+                             (isTeacher() && isOwnSchool(request.resource.data.school_id) && 
+                              isTeacherOfClass(request.resource.data.class_id));
+    }
+    
+    // Grades collection
+    match /grades/{gradeId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    (isStudent() && resource.data.student_id == request.auth.uid) ||
+                    (isParent() && isParentOfStudent(resource.data.student_id)));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id)) ||
+                    (isTeacher() && isOwnSchool(request.resource.data.school_id) && 
+                     isTeacherOfClass(request.resource.data.class_id));
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    (isStudent() && resource.data.student_id == request.auth.uid) ||
+                    (isParent() && isParentOfStudent(resource.data.student_id)));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id));
+    }
+    
+    // Announcements collection
+    match /announcements/{announcementId} {
+      allow read: if request.auth != null && 
+                   (isSuperAdmin() || 
+                    isSchoolAdmin() && isOwnSchool(resource.data.school_id) ||
+                    isTeacher() && isOwnSchool(resource.data.school_id) ||
+                    isStudent() && isOwnSchool(resource.data.school_id) ||
+                    isParent() && isOwnSchool(resource.data.school_id));
+      
+      allow write: if isSuperAdmin() || 
+                    (isSchoolAdmin() && isOwnSchool(request.resource.data.school_id));
+    }
+  }
+}
