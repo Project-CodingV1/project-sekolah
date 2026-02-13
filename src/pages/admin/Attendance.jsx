@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { id } from 'date-fns/locale';
-import { firestoreService } from '../../firebase/firestoreService';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect } from "react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { id } from "date-fns/locale";
+import { firestoreService } from "../../firebase/firestoreService";
+import { useAuth } from "../../context/AuthContext";
 
 const Attendance = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(
+    format(new Date(), "yyyy-MM"),
+  );
   const [loading, setLoading] = useState(true);
   const { userData } = useAuth();
 
@@ -18,11 +20,9 @@ const Attendance = () => {
     // Fetch classes
     const fetchClasses = async () => {
       const classesData = await firestoreService.queryDocuments(
-        'classes',
-        [
-          { field: 'school_id', operator: '==', value: userData.school_id }
-        ],
-        'grade_level'
+        "classes",
+        [{ field: "school_id", operator: "==", value: userData.school_id }],
+        "grade_level",
       );
       setClasses(classesData);
       if (classesData.length > 0) {
@@ -38,63 +38,66 @@ const Attendance = () => {
 
     const fetchAttendance = async () => {
       setLoading(true);
-      
+
       // Calculate date range for selected month
-      const startDate = startOfMonth(new Date(selectedMonth + '-01'));
+      const startDate = startOfMonth(new Date(selectedMonth + "-01"));
       const endDate = endOfMonth(startDate);
-      
+
       // Format dates for query
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
-      
+      const startDateStr = format(startDate, "yyyy-MM-dd");
+      const endDateStr = format(endDate, "yyyy-MM-dd");
+
       try {
         // Get attendance for selected class and month
-        const attendance = await firestoreService.queryDocuments(
-          'attendance',
-          [
-            { field: 'school_id', operator: '==', value: userData.school_id },
-            { field: 'class_id', operator: '==', value: selectedClass },
-            { field: 'date', operator: '>=', value: startDateStr },
-            { field: 'date', operator: '<=', value: endDateStr }
-          ]
-        );
-        
+        const attendance = await firestoreService.queryDocuments("attendance", [
+          { field: "school_id", operator: "==", value: userData.school_id },
+          { field: "class_id", operator: "==", value: selectedClass },
+          { field: "date", operator: ">=", value: startDateStr },
+          { field: "date", operator: "<=", value: endDateStr },
+        ]);
+
         // Get students in class
         const students = await firestoreService.queryDocuments(
-          'users',
+          "users",
           [
-            { field: 'school_id', operator: '==', value: userData.school_id },
-            { field: 'class_id', operator: '==', value: selectedClass },
-            { field: 'role', operator: '==', value: 'student' }
+            { field: "school_id", operator: "==", value: userData.school_id },
+            { field: "class_id", operator: "==", value: selectedClass },
+            { field: "role", operator: "==", value: "student" },
           ],
-          'name'
+          "name",
         );
-        
+
         // Process data
-        const processedData = students.map(student => {
-          const studentAttendance = attendance.filter(a => a.student_id === student.id);
-          
+        const processedData = students.map((student) => {
+          const studentAttendance = attendance.filter(
+            (a) => a.student_id === student.id,
+          );
+
           const stats = {
-            hadir: studentAttendance.filter(a => a.status === 'HADIR').length,
-            izin: studentAttendance.filter(a => a.status === 'IZIN').length,
-            sakit: studentAttendance.filter(a => a.status === 'SAKIT').length,
-            alfa: studentAttendance.filter(a => a.status === 'ALFA').length
+            hadir: studentAttendance.filter((a) => a.status === "HADIR").length,
+            izin: studentAttendance.filter((a) => a.status === "IZIN").length,
+            sakit: studentAttendance.filter((a) => a.status === "SAKIT").length,
+            alfa: studentAttendance.filter((a) => a.status === "ALFA").length,
           };
-          
+
           const totalDays = studentAttendance.length;
-          const attendanceRate = totalDays > 0 ? ((stats.hadir + stats.izin) / totalDays * 100).toFixed(1) : 0;
-          
+          const attendanceRate =
+            totalDays > 0
+              ? (((stats.hadir + stats.izin) / totalDays) * 100).toFixed(1)
+              : 0;
+
           return {
             ...student,
             stats,
             totalDays,
-            attendanceRate
+            attendanceRate,
           };
         });
-        
+
         setAttendanceData(processedData);
+        console.log("data absen", processedData);
       } catch (error) {
-        console.error('Error fetching attendance:', error);
+        console.error("Error fetching attendance:", error);
       } finally {
         setLoading(false);
       }
@@ -105,11 +108,16 @@ const Attendance = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'HADIR': return 'bg-green-100 text-green-800';
-      case 'IZIN': return 'bg-blue-100 text-blue-800';
-      case 'SAKIT': return 'bg-yellow-100 text-yellow-800';
-      case 'ALFA': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "HADIR":
+        return "bg-green-100 text-green-800";
+      case "IZIN":
+        return "bg-blue-100 text-blue-800";
+      case "SAKIT":
+        return "bg-yellow-100 text-yellow-800";
+      case "ALFA":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -151,7 +159,7 @@ const Attendance = () => {
             )}
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Bulan
@@ -169,28 +177,40 @@ const Attendance = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card text-center">
           <div className="text-2xl font-bold text-green-600">
-            {attendanceData.reduce((sum, student) => sum + student.stats.hadir, 0)}
+            {attendanceData.reduce(
+              (sum, student) => sum + student.stats.hadir,
+              0,
+            )}
           </div>
           <div className="text-sm text-gray-600 mt-1">Hadir</div>
         </div>
-        
+
         <div className="card text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {attendanceData.reduce((sum, student) => sum + student.stats.izin, 0)}
+            {attendanceData.reduce(
+              (sum, student) => sum + student.stats.izin,
+              0,
+            )}
           </div>
           <div className="text-sm text-gray-600 mt-1">Izin</div>
         </div>
-        
+
         <div className="card text-center">
           <div className="text-2xl font-bold text-yellow-600">
-            {attendanceData.reduce((sum, student) => sum + student.stats.sakit, 0)}
+            {attendanceData.reduce(
+              (sum, student) => sum + student.stats.sakit,
+              0,
+            )}
           </div>
           <div className="text-sm text-gray-600 mt-1">Sakit</div>
         </div>
-        
+
         <div className="card text-center">
           <div className="text-2xl font-bold text-red-600">
-            {attendanceData.reduce((sum, student) => sum + student.stats.alfa, 0)}
+            {attendanceData.reduce(
+              (sum, student) => sum + student.stats.alfa,
+              0,
+            )}
           </div>
           <div className="text-sm text-gray-600 mt-1">Alfa</div>
         </div>
@@ -233,31 +253,38 @@ const Attendance = () => {
                       {student.name}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {student.nis || '-'}
+                      {student.nis || "-"}
                     </div>
                   </td>
-                  
-                  {['hadir', 'izin', 'sakit', 'alfa'].map((status) => (
+
+                  {["hadir", "izin", "sakit", "alfa"].map((status) => (
                     <td key={status} className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status.toUpperCase())}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status.toUpperCase())}`}
+                      >
                         {student.stats[status]}
                       </span>
                     </td>
                   ))}
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {student.totalDays} hari
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                        <div 
+                        <div
                           className={`h-2 rounded-full ${
-                            student.attendanceRate >= 90 ? 'bg-green-600' :
-                            student.attendanceRate >= 75 ? 'bg-yellow-600' : 'bg-red-600'
+                            student.attendanceRate >= 90
+                              ? "bg-green-600"
+                              : student.attendanceRate >= 75
+                                ? "bg-yellow-600"
+                                : "bg-red-600"
                           }`}
-                          style={{ width: `${Math.min(student.attendanceRate, 100)}%` }}
+                          style={{
+                            width: `${Math.min(student.attendanceRate, 100)}%`,
+                          }}
                         />
                       </div>
                       <span className="text-sm font-medium">
@@ -269,7 +296,7 @@ const Attendance = () => {
               ))}
             </tbody>
           </table>
-          
+
           {attendanceData.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               Tidak ada data absensi untuk bulan ini

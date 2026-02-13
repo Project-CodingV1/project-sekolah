@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { firestoreService } from '../../firebase/firestoreService';
-import { useAuth } from '../../context/AuthContext';
-import { HiUserAdd, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
+import React, { useState, useEffect } from "react";
+import { firestoreService } from "../../firebase/firestoreService";
+import { useAuth } from "../../context/AuthContext";
+import { HiUserAdd, HiPencil, HiTrash, HiRefresh } from "react-icons/hi";
 
 const Master = () => {
-  const [activeTab, setActiveTab] = useState('teachers');
+  const [activeTab, setActiveTab] = useState("teachers");
   const [data, setData] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'teacher',
-    nis: '',
-    nip: '',
-    class_id: '',
-    parent_id: '',
-    status: 'active',
-    gender: '',
-    birth_date: ''
+    name: "",
+    email: "",
+    phone: "",
+    role: "teacher",
+    nis: "",
+    nip: "",
+    class_id: "",
+    parent_id: "",
+    status: "active",
+    gender: "",
+    birth_date: "",
   });
-  
+
   const { userData } = useAuth();
   const [classes, setClasses] = useState([]);
   const [parents, setParents] = useState([]);
@@ -38,28 +39,29 @@ const Master = () => {
     loadData();
     loadClasses();
     loadParents();
+    loadStudent();
   }, [userData?.school_id, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
-      let collectionName = 'users';
+      let collectionName = "users";
       let filters = [
-        { field: 'school_id', operator: '==', value: userData.school_id }
+        { field: "school_id", operator: "==", value: userData.school_id },
       ];
 
       // Filter berdasarkan role
-      switch(activeTab) {
-        case 'teachers':
-          filters.push({ field: 'role', operator: '==', value: 'teacher' });
+      switch (activeTab) {
+        case "teachers":
+          filters.push({ field: "role", operator: "==", value: "teacher" });
           break;
-        case 'students':
-          filters.push({ field: 'role', operator: '==', value: 'student' });
+        case "students":
+          filters.push({ field: "role", operator: "==", value: "student" });
           break;
-        case 'parents':
-          filters.push({ field: 'role', operator: '==', value: 'parent' });
+        case "parents":
+          filters.push({ field: "role", operator: "==", value: "parent" });
           break;
         default:
           break;
@@ -68,13 +70,13 @@ const Master = () => {
       const results = await firestoreService.queryDocuments(
         collectionName,
         filters,
-        'name'
+        "name",
       );
-      
+
       setData(results);
     } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Gagal memuat data: ' + err.message);
+      console.error("Error loading data:", err);
+      setError("Gagal memuat data: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -83,73 +85,89 @@ const Master = () => {
   const loadClasses = async () => {
     try {
       const classesData = await firestoreService.queryDocuments(
-        'classes',
-        [
-          { field: 'school_id', operator: '==', value: userData.school_id }
-        ],
-        'grade_level'
+        "classes",
+        [{ field: "school_id", operator: "==", value: userData.school_id }],
+        "grade_level",
       );
       setClasses(classesData);
     } catch (err) {
-      console.error('Error loading classes:', err);
+      console.error("Error loading classes:", err);
     }
   };
 
   const loadParents = async () => {
     try {
       const parentsData = await firestoreService.queryDocuments(
-        'users',
+        "users",
         [
-          { field: 'school_id', operator: '==', value: userData.school_id },
-          { field: 'role', operator: '==', value: 'parent' }
+          { field: "school_id", operator: "==", value: userData.school_id },
+          { field: "role", operator: "==", value: "parent" },
         ],
-        'name'
+        "name",
       );
       setParents(parentsData);
+      console.log("prent dta:", parentsData);
     } catch (err) {
-      console.error('Error loading parents:', err);
+      console.error("Error loading parents:", err);
     }
+  };
+
+  const loadStudent = async () => {
+    const studentData = await firestoreService.queryDocuments(
+      "users",
+      [
+        { field: "school_id", operator: "==", value: userData.school_id },
+        { field: "role", operator: "==", value: "student" },
+      ],
+      "name",
+    );
+    setStudents(studentData);
+    console.log("dataMuird", studentData);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: activeTab === 'teachers' ? 'teacher' : 
-            activeTab === 'students' ? 'student' : 'parent',
-      nis: '',
-      nip: '',
-      class_id: '',
-      parent_id: '',
-      status: 'active',
-      gender: '',
-      birth_date: ''
+      name: "",
+      email: "",
+      phone: "",
+      role:
+        activeTab === "teachers"
+          ? "teacher"
+          : activeTab === "students"
+            ? "student"
+            : "parent",
+      nis: "",
+      nip: "",
+      class_id: "",
+      parent_id: "",
+      status: "active",
+      gender: "",
+      birth_date: "",
     });
     setEditingId(null);
   };
 
   const handleEdit = (item) => {
     setFormData({
-      name: item.name || '',
-      email: item.email || '',
-      phone: item.phone || '',
+      name: item.name || "",
+      email: item.email || "",
+      phone: item.phone || "",
       role: item.role || activeTab,
-      nis: item.nis || '',
-      nip: item.nip || '',
-      class_id: item.class_id || '',
-      parent_id: item.parent_id || '',
-      status: item.status || 'active',
-      gender: item.gender || '',
-      birth_date: item.birth_date || ''
+      nis: item.nis || "",
+      nip: item.nip || "",
+      class_id: item.class_id || "",
+      parent_id: item.parent_id || "",
+      status: item.status || "active",
+      gender: item.gender || "",
+      birth_date: item.birth_date || "",
     });
     setEditingId(item.id);
     setShowModal(true);
@@ -157,56 +175,65 @@ const Master = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    
+    setError("");
+
     try {
       // Validasi
       if (!formData.name.trim()) {
-        throw new Error('Nama wajib diisi');
+        throw new Error("Nama wajib diisi");
       }
       if (!formData.email.trim()) {
-        throw new Error('Email wajib diisi');
+        throw new Error("Email wajib diisi");
       }
-      
+
       const userDataToSave = {
         ...formData,
         school_id: userData.school_id,
         school_name: userData.school_name,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       let result;
-      
+
       if (editingId) {
         // Update existing
-        result = await firestoreService.updateDocument('users', editingId, userDataToSave);
+        result = await firestoreService.updateDocument(
+          "users",
+          editingId,
+          userDataToSave,
+        );
       } else {
         // Create new
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         userDataToSave.created_at = new Date().toISOString();
-        
+
         // Untuk user baru, buat juga di Firebase Auth
         if (formData.email && formData.password) {
           // Catatan: Di production, buat user di Auth terlebih dahulu
           // Untuk demo, kita simpan password di Firestore (tidak recommended untuk production)
           userDataToSave.password = formData.password;
         }
-        
-        result = await firestoreService.createDocument('users', userId, userDataToSave);
+
+        result = await firestoreService.createDocument(
+          "users",
+          userId,
+          userDataToSave,
+        );
       }
 
       // Refresh data
       await loadData();
-      
+
       // Reset dan tutup modal
       resetForm();
       setShowModal(false);
-      
-      alert(editingId ? 'Data berhasil diperbarui' : 'Data berhasil ditambahkan');
-      
+
+      alert(
+        editingId ? "Data berhasil diperbarui" : "Data berhasil ditambahkan",
+      );
     } catch (err) {
-      console.error('Error saving data:', err);
-      setError('Gagal menyimpan data: ' + err.message);
+      console.error("Error saving data:", err);
+      setError("Gagal menyimpan data: " + err.message);
     }
   };
 
@@ -214,59 +241,77 @@ const Master = () => {
     if (!confirm(`Apakah Anda yakin ingin menghapus ${name}?`)) {
       return;
     }
-    
+
     try {
       // Untuk user, sebaiknya nonaktifkan bukan hapus
-      await firestoreService.updateDocument('users', id, {
-        status: 'inactive',
-        updated_at: new Date().toISOString()
+      await firestoreService.updateDocument("users", id, {
+        status: "inactive",
+        updated_at: new Date().toISOString(),
       });
-      
+
       await loadData();
-      alert('Data berhasil dinonaktifkan');
+      alert("Data berhasil dinonaktifkan");
     } catch (err) {
-      console.error('Error deleting data:', err);
-      alert('Gagal menghapus data: ' + err.message);
+      console.error("Error deleting data:", err);
+      alert("Gagal menghapus data: " + err.message);
     }
   };
 
   const renderTable = () => {
-    switch(activeTab) {
-      case 'teachers':
+    switch (activeTab) {
+      case "teachers":
         return (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIP</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telepon</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  NIP
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nama
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Telepon
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{item.nip || '-'}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {item.nip || "-"}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {item.name}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.email}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.phone || '-'}
+                    {item.phone || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      item.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {item.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        item.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {item.status === "active" ? "Aktif" : "Nonaktif"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -289,46 +334,66 @@ const Master = () => {
           </table>
         );
 
-      case 'students':
+      case "students":
         return (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orang Tua</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  NIS
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nama
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Kelas
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Orang Tua
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((item) => {
-                const parent = parents.find(p => p.id === item.parent_id);
-                const classInfo = classes.find(c => c.id === item.class_id);
-                
+                const parent = parents.find((p) => p.id === item.parent_id);
+                const classInfo = classes.find((c) => c.id === item.class_id);
+
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.nis || '-'}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {item.nis || "-"}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                      <div className="text-sm text-gray-500">{item.gender === 'male' ? 'Laki-laki' : 'Perempuan'}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {item.name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {item.gender === "male" ? "Laki-laki" : "Perempuan"}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {classInfo?.name || '-'}
+                      {classInfo?.name || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {parent?.name || '-'}
+                      {parent?.name || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        item.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {item.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {item.status === "active" ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -352,45 +417,62 @@ const Master = () => {
           </table>
         );
 
-      case 'parents':
+      case "parents":
         return (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telepon</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Anak</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nama
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Telepon
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Jumlah Anak
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((item) => {
-                const childrenCount = item.children_count || 
-                  data.filter(s => s.parent_id === item.id).length;
-                
+                const childrenCount =
+                  item.children_count ||
+                  students.filter((s) => s.parent_id === item.id).length;
+
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {item.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.phone || '-'}
+                      {item.phone || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {childrenCount} anak
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        item.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {item.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {item.status === "active" ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -432,9 +514,11 @@ const Master = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Master Data</h2>
-          <p className="text-gray-600 mt-1">Kelola data guru, murid, dan orang tua</p>
+          <p className="text-gray-600 mt-1">
+            Kelola data guru, murid, dan orang tua
+          </p>
         </div>
-        
+
         <div className="flex space-x-3">
           <button
             onClick={loadData}
@@ -465,7 +549,7 @@ const Master = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {['teachers', 'students', 'parents'].map((tab) => (
+          {["teachers", "students", "parents"].map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -474,13 +558,13 @@ const Master = () => {
               }}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              {tab === 'teachers' && 'Guru'}
-              {tab === 'students' && 'Murid'}
-              {tab === 'parents' && 'Orang Tua'}
+              {tab === "teachers" && "Guru"}
+              {tab === "students" && "Murid"}
+              {tab === "parents" && "Orang Tua"}
             </button>
           ))}
         </nav>
@@ -497,9 +581,7 @@ const Master = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Belum ada data {activeTab}
               </h3>
-              <p className="text-gray-600">
-                Tambah data pertama untuk memulai
-              </p>
+              <p className="text-gray-600">Tambah data pertama untuk memulai</p>
               <button
                 onClick={() => setShowModal(true)}
                 className="mt-4 btn-primary"
@@ -519,9 +601,9 @@ const Master = () => {
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingId ? 'Edit Data' : 'Tambah Data Baru'}
+                {editingId ? "Edit Data" : "Tambah Data Baru"}
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -537,7 +619,7 @@ const Master = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email *
@@ -552,7 +634,7 @@ const Master = () => {
                     required
                   />
                 </div>
-                
+
                 {!editingId && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -561,7 +643,7 @@ const Master = () => {
                     <input
                       type="password"
                       name="password"
-                      value={formData.password || ''}
+                      value={formData.password || ""}
                       onChange={handleInputChange}
                       className="input-field"
                       placeholder="Minimal 8 karakter"
@@ -569,7 +651,7 @@ const Master = () => {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Telepon
@@ -583,8 +665,8 @@ const Master = () => {
                     placeholder="0812-3456-7890"
                   />
                 </div>
-                
-                {activeTab === 'students' && (
+
+                {activeTab === "students" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -597,10 +679,10 @@ const Master = () => {
                         onChange={handleInputChange}
                         className="input-field"
                         placeholder="Nomor Induk Siswa"
-                        required={activeTab === 'students'}
+                        required={activeTab === "students"}
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Kelas *
@@ -610,7 +692,7 @@ const Master = () => {
                         value={formData.class_id}
                         onChange={handleInputChange}
                         className="input-field"
-                        required={activeTab === 'students'}
+                        required={activeTab === "students"}
                       >
                         <option value="">Pilih Kelas</option>
                         {classes.map((cls) => (
@@ -620,7 +702,7 @@ const Master = () => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Orang Tua
@@ -639,7 +721,7 @@ const Master = () => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Jenis Kelamin
@@ -657,8 +739,8 @@ const Master = () => {
                     </div>
                   </>
                 )}
-                
-                {activeTab === 'teachers' && (
+
+                {activeTab === "teachers" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       NIP
@@ -673,7 +755,7 @@ const Master = () => {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
@@ -688,7 +770,7 @@ const Master = () => {
                     <option value="inactive">Nonaktif</option>
                   </select>
                 </div>
-                
+
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
@@ -700,11 +782,8 @@ const Master = () => {
                   >
                     Batal
                   </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    {editingId ? 'Simpan Perubahan' : 'Simpan Data'}
+                  <button type="submit" className="btn-primary">
+                    {editingId ? "Simpan Perubahan" : "Simpan Data"}
                   </button>
                 </div>
               </form>

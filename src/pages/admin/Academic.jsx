@@ -1,27 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { firestoreService } from '../../firebase/firestoreService';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect } from "react";
+import { firestoreService } from "../../firebase/firestoreService";
+import { useAuth } from "../../context/AuthContext";
 
 const Academic = () => {
-  const [activeTab, setActiveTab] = useState('classes');
+  const [activeTab, setActiveTab] = useState("classes");
   const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    type: 'class',
-    name: '',
-    grade_level: '',
-    teacher_id: '',
-    subject_name: '',
-    subject_code: '',
-    day: 'Monday',
-    start_time: '',
-    end_time: '',
-    class_id: '',
-    subject_id: ''
+    type: "class",
+    name: "",
+    grade_level: "",
+    teacher_id: "",
+    subject_name: "",
+    subject_code: "",
+    day: "Monday",
+    start_time: "",
+    end_time: "",
+    class_id: "",
+    subject_id: "",
   });
   const { userData } = useAuth();
 
@@ -32,47 +33,52 @@ const Academic = () => {
       try {
         // Fetch classes
         const classesData = await firestoreService.queryDocuments(
-          'classes',
-          [
-            { field: 'school_id', operator: '==', value: userData.school_id }
-          ],
-          'grade_level'
+          "classes",
+          [{ field: "school_id", operator: "==", value: userData.school_id }],
+          "grade_level",
         );
         setClasses(classesData);
+        console.log("data kelas", classesData);
+
+        const studentData = await firestoreService.queryDocuments(
+          "users",
+          [
+            { field: "school_id", operator: "==", value: userData.school_id },
+            { field: "role", operator: "==", value: "student" },
+          ],
+          "name",
+        );
+        setStudents(studentData);
+        console.log("dataMuird", studentData);
 
         // Fetch subjects
         const subjectsData = await firestoreService.queryDocuments(
-          'subjects',
-          [
-            { field: 'school_id', operator: '==', value: userData.school_id }
-          ],
-          'name'
+          "subjects",
+          [{ field: "school_id", operator: "==", value: userData.school_id }],
+          "name",
         );
         setSubjects(subjectsData);
 
         // Fetch schedules
         const schedulesData = await firestoreService.queryDocuments(
-          'schedules',
-          [
-            { field: 'school_id', operator: '==', value: userData.school_id }
-          ],
-          'day'
+          "schedules",
+          [{ field: "school_id", operator: "==", value: userData.school_id }],
+          "day",
         );
         setSchedules(schedulesData);
 
         // Fetch teachers
         const teachersData = await firestoreService.queryDocuments(
-          'users',
+          "users",
           [
-            { field: 'school_id', operator: '==', value: userData.school_id },
-            { field: 'role', operator: '==', value: 'teacher' }
+            { field: "school_id", operator: "==", value: userData.school_id },
+            { field: "role", operator: "==", value: "teacher" },
           ],
-          'name'
+          "name",
         );
         setTeachers(teachersData);
-
       } catch (error) {
-        console.error('Error fetching academic data:', error);
+        console.error("Error fetching academic data:", error);
       } finally {
         setLoading(false);
       }
@@ -83,98 +89,109 @@ const Academic = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       let documentId;
       let collectionName;
       let dataToSave;
 
       switch (formData.type) {
-        case 'class':
+        case "class":
           documentId = `class_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          collectionName = 'classes';
+          collectionName = "classes";
           dataToSave = {
             name: formData.name,
             grade_level: formData.grade_level,
             teacher_id: formData.teacher_id,
-            school_id: userData.school_id
+            school_id: userData.school_id,
           };
           break;
-        
-        case 'subject':
+
+        case "subject":
           documentId = `subject_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          collectionName = 'subjects';
+          collectionName = "subjects";
           dataToSave = {
             name: formData.subject_name,
             code: formData.subject_code,
-            school_id: userData.school_id
+            school_id: userData.school_id,
           };
           break;
-        
-        case 'schedule':
+
+        case "schedule":
           documentId = `schedule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          collectionName = 'schedules';
+          collectionName = "schedules";
           dataToSave = {
             day: formData.day,
             start_time: formData.start_time,
             end_time: formData.end_time,
             class_id: formData.class_id,
             subject_id: formData.subject_id,
-            school_id: userData.school_id
+            school_id: userData.school_id,
           };
           break;
-        
+
         default:
           return;
       }
 
-      await firestoreService.createDocument(collectionName, documentId, dataToSave);
-      
+      await firestoreService.createDocument(
+        collectionName,
+        documentId,
+        dataToSave,
+      );
+
       // Reset form
       setFormData({
-        type: 'class',
-        name: '',
-        grade_level: '',
-        teacher_id: '',
-        subject_name: '',
-        subject_code: '',
-        day: 'Monday',
-        start_time: '',
-        end_time: '',
-        class_id: '',
-        subject_id: ''
+        type: "class",
+        name: "",
+        grade_level: "",
+        teacher_id: "",
+        subject_name: "",
+        subject_code: "",
+        day: "Monday",
+        start_time: "",
+        end_time: "",
+        class_id: "",
+        subject_id: "",
       });
       setShowModal(false);
-      
-      alert('Data berhasil disimpan');
+
+      alert("Data berhasil disimpan");
       window.location.reload();
     } catch (error) {
-      console.error('Error saving academic data:', error);
-      alert('Gagal menyimpan data');
+      console.error("Error saving academic data:", error);
+      alert("Gagal menyimpan data");
     }
   };
 
   const getCurrentData = () => {
     switch (activeTab) {
-      case 'classes': return classes;
-      case 'subjects': return subjects;
-      case 'schedules': return schedules;
-      default: return [];
+      case "classes":
+        return classes;
+      case "subjects":
+        return subjects;
+      case "schedules":
+        return schedules;
+      default:
+        return [];
     }
   };
 
   const renderRow = (item) => {
     switch (activeTab) {
-      case 'classes':
-        const teacher = teachers.find(t => t.id === item.teacher_id);
+      case "classes":
+        const teacher = teachers.find((t) => t.id === item.teacher_id);
+        const studentCount = students.filter(
+          (s) => s.class_id === item.id,
+        ).length;
         return (
           <tr key={item.id} className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
@@ -184,19 +201,21 @@ const Academic = () => {
               {item.grade_level}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {teacher?.name || '-'}
+              {teacher?.name || "-"}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {item.student_count || 0} siswa
+              {studentCount || 0} siswa
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button className="text-primary-600 hover:text-primary-900 mr-3">Edit</button>
+              <button className="text-primary-600 hover:text-primary-900 mr-3">
+                Edit
+              </button>
               <button className="text-red-600 hover:text-red-900">Hapus</button>
             </td>
           </tr>
         );
-      
-      case 'subjects':
+
+      case "subjects":
         return (
           <tr key={item.id} className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
@@ -206,15 +225,17 @@ const Academic = () => {
               {item.name}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button className="text-primary-600 hover:text-primary-900 mr-3">Edit</button>
+              <button className="text-primary-600 hover:text-primary-900 mr-3">
+                Edit
+              </button>
               <button className="text-red-600 hover:text-red-900">Hapus</button>
             </td>
           </tr>
         );
-      
-      case 'schedules':
-        const classItem = classes.find(c => c.id === item.class_id);
-        const subject = subjects.find(s => s.id === item.subject_id);
+
+      case "schedules":
+        const classItem = classes.find((c) => c.id === item.class_id);
+        const subject = subjects.find((s) => s.id === item.subject_id);
         return (
           <tr key={item.id} className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -224,18 +245,20 @@ const Academic = () => {
               {item.start_time} - {item.end_time}
             </td>
             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-              {classItem?.name || '-'}
+              {classItem?.name || "-"}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {subject?.name || '-'}
+              {subject?.name || "-"}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button className="text-primary-600 hover:text-primary-900 mr-3">Edit</button>
+              <button className="text-primary-600 hover:text-primary-900 mr-3">
+                Edit
+              </button>
               <button className="text-red-600 hover:text-red-900">Hapus</button>
             </td>
           </tr>
         );
-      
+
       default:
         return null;
     }
@@ -254,12 +277,11 @@ const Academic = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Akademik</h2>
-          <p className="text-gray-600 mt-1">Kelola kelas, mata pelajaran, dan jadwal</p>
+          <p className="text-gray-600 mt-1">
+            Kelola kelas, mata pelajaran, dan jadwal
+          </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn-primary"
-        >
+        <button onClick={() => setShowModal(true)} className="btn-primary">
           + Tambah Data
         </button>
       </div>
@@ -267,19 +289,19 @@ const Academic = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {['classes', 'subjects', 'schedules'].map((tab) => (
+          {["classes", "subjects", "schedules"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              {tab === 'classes' && 'Kelas'}
-              {tab === 'subjects' && 'Mata Pelajaran'}
-              {tab === 'schedules' && 'Jadwal'}
+              {tab === "classes" && "Kelas"}
+              {tab === "subjects" && "Mata Pelajaran"}
+              {tab === "schedules" && "Jadwal"}
             </button>
           ))}
         </nav>
@@ -291,29 +313,55 @@ const Academic = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                {activeTab === 'classes' && (
+                {activeTab === "classes" && (
                   <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tingkat</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wali Kelas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kelas
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tingkat
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Wali Kelas
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Siswa
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
                   </>
                 )}
-                {activeTab === 'subjects' && (
+                {activeTab === "subjects" && (
                   <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kode
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mata Pelajaran
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
                   </>
                 )}
-                {activeTab === 'schedules' && (
+                {activeTab === "schedules" && (
                   <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hari</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mapel</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Hari
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Waktu
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kelas
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mapel
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
                   </>
                 )}
               </tr>
@@ -322,7 +370,7 @@ const Academic = () => {
               {getCurrentData().map(renderRow)}
             </tbody>
           </table>
-          
+
           {getCurrentData().length === 0 && (
             <div className="text-center py-8 text-gray-500">
               Belum ada data {activeTab}
@@ -339,7 +387,7 @@ const Academic = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Tambah Data Akademik
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -357,8 +405,8 @@ const Academic = () => {
                     <option value="schedule">Jadwal</option>
                   </select>
                 </div>
-                
-                {formData.type === 'class' && (
+
+                {formData.type === "class" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -374,7 +422,7 @@ const Academic = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Tingkat Kelas
@@ -401,7 +449,7 @@ const Academic = () => {
                         <option value="12">Kelas 12</option>
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Wali Kelas
@@ -422,8 +470,8 @@ const Academic = () => {
                     </div>
                   </>
                 )}
-                
-                {formData.type === 'subject' && (
+
+                {formData.type === "subject" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -439,7 +487,7 @@ const Academic = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nama Mata Pelajaran
@@ -456,8 +504,8 @@ const Academic = () => {
                     </div>
                   </>
                 )}
-                
-                {formData.type === 'schedule' && (
+
+                {formData.type === "schedule" && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -479,7 +527,7 @@ const Academic = () => {
                           <option value="Saturday">Sabtu</option>
                         </select>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Kelas
@@ -500,7 +548,7 @@ const Academic = () => {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -521,7 +569,7 @@ const Academic = () => {
                           ))}
                         </select>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Waktu Mulai
@@ -536,7 +584,7 @@ const Academic = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Waktu Selesai
@@ -552,7 +600,7 @@ const Academic = () => {
                     </div>
                   </>
                 )}
-                
+
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
@@ -561,10 +609,7 @@ const Academic = () => {
                   >
                     Batal
                   </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
+                  <button type="submit" className="btn-primary">
                     Simpan Data
                   </button>
                 </div>
